@@ -21,8 +21,9 @@ def _escape(text: str) -> str:
     """Escape MarkdownV2 special characters."""
     if not text:
         return ""
-    chars = r"_*[]()~`>#+-=|{}.!\\"
-    for c in chars:
+    # Backslash must be escaped first to avoid double-escaping
+    text = text.replace("\\", "\\\\")
+    for c in r"_*[]()~`>#+-=|{}.!":
         text = text.replace(c, f"\\{c}")
     return text
 
@@ -183,11 +184,11 @@ def _format_english(enriched: EnrichedAuction) -> str:
         "Consult escribano before bidding\\._"
     )
 
-    # Tags
+    # Tags — escape # for MarkdownV2 (renders as clickable hashtags)
     tags = _generate_tags(a)
     if tags:
         lines.append("")
-        lines.append(" ".join(tags))
+        lines.append(" ".join(_escape(t) for t in tags))
 
     return "\n".join(lines)
 
@@ -260,6 +261,6 @@ def _format_spanish(enriched: EnrichedAuction) -> str:
     tags = _generate_tags(a)
     if tags:
         lines.append("")
-        lines.append(" ".join(tags))
+        lines.append(" ".join(_escape(t) for t in tags))
 
     return "\n".join(lines)
