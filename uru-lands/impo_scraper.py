@@ -11,6 +11,7 @@ simple server-side HTML, no anti-bot protection, no rate limiting.
 Fetching once a day is more than enough.
 """
 
+import re
 import logging
 from typing import List, Optional
 
@@ -24,6 +25,36 @@ IMPO_REMATES_URL = "http://www.impo.com.uy/remates"
 
 # IMPO uses ISO-8859-1 encoding, not UTF-8
 IMPO_ENCODING = "iso-8859-1"
+
+
+def _strip_html(html: str) -> str:
+    """
+    Converts IMPO HTML to plain text that impo_parser can handle.
+
+    Preserves edicto text by:
+    1. Replacing <a href="...">6302/026</a> → 6302/026 (keeps edicto numbers)
+    2. Removing all remaining tags
+    3. Decoding HTML entities
+    4. Collapsing whitespace into single lines
+    """
+    # Unwrap anchor tags (keep their text — edicto numbers live here)
+    text = re.sub(r"<a\b[^>]*>([^<]*)</a>", r"\1", html)
+    # Strip all remaining HTML tags
+    text = re.sub(r"<[^>]+>", " ", text)
+    # Decode common HTML entities
+    entities = {
+        "&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">",
+        "&aacute;": "á", "&eacute;": "é", "&iacute;": "í",
+        "&oacute;": "ó", "&uacute;": "ú", "&ntilde;": "ñ",
+        "&Aacute;": "Á", "&Eacute;": "É", "&Iacute;": "Í",
+        "&Oacute;": "Ó", "&Uacute;": "Ú", "&Ntilde;": "Ñ",
+    }
+    for entity, char in entities.items():
+        text = text.replace(entity, char)
+    # Collapse blank lines and strip trailing whitespace
+    lines = [line.strip() for line in text.splitlines()]
+    lines = [line for line in lines if line]
+    return "\n".join(lines)
 
 
 class IMPOScraper:
@@ -69,6 +100,7 @@ class IMPOScraper:
 
                 raw_bytes = await resp.read()
                 text = raw_bytes.decode(IMPO_ENCODING, errors="replace")
+                text = _strip_html(text)
                 logger.info(f"Fetched {len(text)} bytes from IMPO")
                 return text
 
