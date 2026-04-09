@@ -66,11 +66,14 @@ def _generate_tags(auction: Auction) -> List[str]:
 
     if auction.is_land:
         if auction.area_m2 and auction.area_m2 >= 100000:  # 10+ ha
-            tags.append("#Campo")
+            if "#Campo" not in tags:
+                tags.append("#Campo")
         elif auction.area_m2 and auction.area_m2 >= 10000:  # 1-10 ha
-            tags.append("#Chacra")
+            if "#Chacra" not in tags:
+                tags.append("#Chacra")
         else:
-            tags.append("#Terreno")
+            if "#Terreno" not in tags:
+                tags.append("#Terreno")
 
     if not auction.has_base:
         tags.append("#SinBase")
